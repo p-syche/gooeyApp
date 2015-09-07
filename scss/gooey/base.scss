@@ -1,0 +1,36 @@
+@import url(http://fonts.googleapis.com/css?family=Raleway:100,400,600,800);
+
+.pane, .view {
+  background-color: pink;
+}
+
+*,
+*:after,
+*:before {
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+body {
+  background: #46484a;
+  color: #a8a8a8;
+  font-weight: 400;
+  font-size: 1em;
+  font-family: 'Raleway', 'Avenir Next', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #fff;
+  text-decoration: none;
+  outline: none;
+}
+
+a:hover,
+a:focus {
+  color: #eab1c6;
+  outline: none;
+}
+
+button:focus {
+  outline: none;
+}
