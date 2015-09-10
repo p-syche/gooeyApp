@@ -12,9 +12,10 @@ function($ionicTabsDelegate, $ionicConfig) {
       //We cannot use regular transclude here because it breaks element.data()
       //inheritance on compile
     	var jqLite = angular.element,
-      		innerElement = jqLite('<div class="tab-nav tabs"><gooey-button>GOOEY</gooey-button>');
+      		innerElement = jqLite('<div class="tab-nav tabs">');
 
       innerElement.append(tElement.contents());
+      innerElement.append('<gooey-button>GOOEY</gooey-button>');
 
       tElement.append(innerElement)
               .addClass('tabs-' + $ionicConfig.tabs.position() + ' tabs-' + $ionicConfig.tabs.style());
@@ -28,6 +29,8 @@ function($ionicTabsDelegate, $ionicConfig) {
         tabsCtrl.$scope = $scope;
         tabsCtrl.$element = $element;
         tabsCtrl.$tabsElement = jqLite($element[0].querySelector('.tabs'));
+        tabsCtrl.$tabsElement.append('<ul class="menu-items"></ul>');
+        tabsCtrl.$tabNavList = jqLite($element[0].querySelector('.menu-items'));
 
         $scope.$watch(function() { return $element[0].className; }, function(value) {
           var isTabsTop = value.indexOf('tabs-top') !== -1;
@@ -73,6 +76,69 @@ function($ionicTabsDelegate, $ionicConfig) {
   };
 }])
 
+.directive('gooeyTabNav', [function() {
+  return {
+    restrict: 'E',
+    replace: true,
+    require: ['^ionTabs', '^ionTab'],
+    template:
+    '<li ng-class="{\'tab-item-active\': isTabActive(), \'has-badge\':badge, \'tab-hidden\':isHidden()}" ' +
+      ' ng-disabled="disabled()" class="menu-item">' +
+		'<button class="menu-item-button">' +
+			'<i class="icon {{getIconOn()}}" ng-if="getIconOn() && isTabActive()"></i>' +
+			'<i class="icon {{getIconOff()}}" ng-if="getIconOff() && !isTabActive()"></i>' +
+		'</button>' +
+		'<div class="menu-item-bounce"></div>' +
+	'</li>',
+    scope: {
+      title: '@',
+      icon: '@',
+      iconOn: '@',
+      iconOff: '@',
+      badge: '=',
+      hidden: '@',
+      disabled: '&',
+      badgeStyle: '@',
+      'class': '@'
+    },
+    link: function($scope, $element, $attrs, ctrls) {
+      var tabsCtrl = ctrls[0],
+        tabCtrl = ctrls[1];
+
+      //Remove title attribute so browser-tooltip does not apear
+      $element[0].removeAttribute('title');
+
+      $scope.selectTab = function(e) {
+        e.preventDefault();
+        tabsCtrl.select(tabCtrl.$scope, true);
+      };
+      if (!$attrs.ngClick) {
+        $element.on('click', function(event) {
+          $scope.$apply(function() {
+            $scope.selectTab(event);
+          });
+        });
+      }
+
+      $scope.isHidden = function() {
+        if ($attrs.hidden === 'true' || $attrs.hidden === true) return true;
+        return false;
+      };
+
+      $scope.getIconOn = function() {
+        return $scope.iconOn || $scope.icon;
+      };
+      $scope.getIconOff = function() {
+        return $scope.iconOff || $scope.icon;
+      };
+
+      $scope.isTabActive = function() {
+        return tabsCtrl.selectedTab() === tabCtrl.$scope;
+      };
+    }
+  };
+}])
+
 .directive('gooeyTab', [
   '$compile',
   '$ionicConfig',
@@ -96,7 +162,7 @@ function($compile, $ionicConfig, $ionicBind, $ionicViewSwitcher) {
       //We create the tabNavTemplate in the compile phase so that the
       //attributes we pass down won't be interpolated yet - we want
       //to pass down the 'raw' versions of the attributes
-      var tabNavTemplate = '<ion-tab-nav' +
+      var tabNavTemplate = '<gooey-tab-nav' +
         attrStr('ng-click', attr.ngClick) +
         attrStr('title', attr.title) +
         attrStr('icon', attr.icon) +
@@ -107,7 +173,7 @@ function($compile, $ionicConfig, $ionicBind, $ionicViewSwitcher) {
         attrStr('hidden', attr.hidden) +
         attrStr('disabled', attr.disabled) +
         attrStr('class', attr['class']) +
-        '></ion-tab-nav>';
+        '></gooey-tab-nav>';
 
       //Remove the contents of the element so we can compile them later, if tab is selected
       var tabContentEle = document.createElement('div');
@@ -180,8 +246,7 @@ function($compile, $ionicConfig, $ionicBind, $ionicViewSwitcher) {
         var tabNavElement = jqLite(tabNavTemplate);
         tabNavElement.data('$ionTabsController', tabsCtrl);
         tabNavElement.data('$ionTabController', tabCtrl);
-        tabsCtrl.$tabsElement.append($compile(tabNavElement)($scope));
-
+        tabsCtrl.$tabNavList.append($compile(tabNavElement)($scope));
 
         function tabSelected(isSelected) {
           if (isSelected && childElementCount) {
@@ -246,124 +311,198 @@ function($compile, $ionicConfig, $ionicBind, $ionicViewSwitcher) {
 	return {
 		template: 
 			'<button class="menu-toggle-button">' +
-				'<i class="ion-plus-round"></i>' +
+				'<i class="menu-toggle-icon ion-plus-round"></i>' +
 			'</button>',
 		link: function (scope, elem, attrs) {
 
 			$timeout(function () {
-				var menuItemNum = elem.parent().find('a').length,
-					menuItem = elem.parent().find('a'),
+
+        var pane = angular.element(document.querySelector('.pane'));
+
+        function isEquivalent(a, b) {
+          // Create arrays of property names
+          var aProps = Object.getOwnPropertyNames(a);
+          var bProps = Object.getOwnPropertyNames(b);
+
+          // If number of properties is different,
+          // objects are not equivalent
+          if (aProps.length != bProps.length) {
+              return false;
+          }
+
+          for (var i = 0; i < aProps.length; i++) {
+              var propName = aProps[i];
+
+              // If values of same property are not equal,
+              // objects are not equivalent
+              if (a[propName] !== b[propName]) {
+                  return false;
+              }
+          }
+
+          // If we made it this far, objects
+          // are considered equivalent
+          return true;
+        }
+
+
+
+				var menuItemNum = elem.parent().find('li').length,
+					menuItem = elem.parent().find('li'),
 					buttonIcon = elem.find('i'),
 					angle=120,
 					distance=90,
-					startingAngle=180+(-angle/2)
-					slice=angle/(menuItemNum-1);
+					startingAngle=180+(-angle/2),
+					slice=angle/(menuItemNum-1),
+          on=false;
 
-			TweenMax.globalTimeScale(0.8);
+				TweenMax.globalTimeScale(0.8);
 
-			angular.forEach(menuItem, function (item, i) {
-				var angle=startingAngle+(slice*i);
-				angular.element(item).css({
-					transform:"rotate("+(angle)+"deg)"
+        $ionicGesture.on('touch', function (event) {
+
+          if (isEquivalent(angular.element(event.target), buttonIcon)) {
+            TweenMax.to(buttonIcon,0.1,{
+               scale:0.65
+             });
+
+            TweenMax.to(buttonIcon,0.4,{
+              rotation:on?45:0,
+              ease:Quint.easeInOut,
+              force3D:true
+            });
+
+            pressHandler();
+
+          } else if (on === true) {
+            on=false;
+            TweenMax.to(buttonIcon,0.4,{
+              rotation:on?45:0,
+              ease:Quint.easeInOut,
+              force3D:true
+            });
+            closeMenu();
+          } 
+        }, pane);
+
+        $ionicGesture.on('release', function (event) {
+          TweenMax.to(buttonIcon,0.1,{
+            scale:1
+          })
+        }, elem);
+
+				angular.forEach(menuItem, function (item, i) {
+					var angle=startingAngle+(slice*i),
+						itemIcon = angular.element(item).find('i');
+
+					angular.element(item).css({
+						transform:"rotate("+(angle)+"deg)"
+					});
+					angular.element(item.children[0]).css({
+						transform:"rotate("+(-angle)+"deg)"
+					});
+
 				});
-				angular.element(item.children[0]).css({
-					transform:"rotate("+(-angle)+"deg)"
-				});
-			});
+								
+				function pressHandler(){
+					on=!on;
 
-			var on=false;
-		
-			$ionicGesture.on('touch', function () {
-				TweenMax.to(buttonIcon,0.1,{
-					scale:0.65
-				})
-			}, elem);
+					TweenMax.to(buttonIcon,0.4,{
+						rotation:on?45:0,
+						ease:Quint.easeInOut,
+						force3D:true
+					});
+
+					on?openMenu():closeMenu();
+					
+				};
+
+				function openMenu () {
+          angular.forEach(menuItem, function (item, i) {
+						var delay = i*0.08,
+							bounce = angular.element(item).find('div'),
+							button = angular.element(item).find('button');
+
+						TweenMax.fromTo(bounce,0.2,{
+							transformOrigin:"50% 50%"
+						},{
+							delay:delay,
+							scaleX:0.8,
+							scaleY:1.2,
+							force3D:true,
+							ease:Quad.easeInOut,
+							onComplete:function(){
+								TweenMax.to(bounce,0.15,{
+									// scaleX:1.2,
+									scaleY:0.7,
+									force3D:true,
+									ease:Quad.easeInOut,
+									onComplete:function(){
+										TweenMax.to(bounce,3,{
+											// scaleX:1,
+											scaleY:0.8,
+											force3D:true,
+											ease:Elastic.easeOut,
+											easeParams:[1.1,0.12]
+										})
+									}
+								})
+							}
+						});
+
+						TweenMax.to(button,0.5,{
+							delay:delay,
+							y:distance,
+							force3D:true,
+							ease:Quint.easeInOut
+						});
+
+					});
+
 			
+				};
 
-			$ionicGesture.on('release', function () {
-				TweenMax.to(buttonIcon,0.1,{
-					scale:1
-				})
-			}, elem);
+				function closeMenu () {
+          angular.forEach(menuItem, function (item, i) {
+						var delay=i*0.08,
+							bounce = angular.element(item).find('div'),
+							button = angular.element(item).find('button');
 
-			
+						TweenMax.fromTo(bounce,0.2,{
+							transformOrigin:"50% 50%"
+						},{
+							delay:delay,
+							scaleX:1,
+							scaleY:0.8,
+							force3D:true,
+							ease:Quad.easeInOut,
+							onComplete:function(){
+								TweenMax.to(bounce,0.15,{
+									// scaleX:1.2,
+									scaleY:1.2,
+									force3D:true,
+									ease:Quad.easeInOut,
+									onComplete:function(){
+										TweenMax.to(bounce,3,{
+											// scaleX:1,
+											scaleY:1,
+											force3D:true,
+											ease:Elastic.easeOut,
+											easeParams:[1.1,0.12]
+										})
+									}
+								})
+							}
+						});
 
-			
-
-
+						TweenMax.to(button,0.3,{
+							delay:delay,
+							y:0,
+							force3D:true,
+							ease:Quint.easeIn
+						});
+					});
+				};
 			}, 10);
-
-	// var menuItemNum=$(".menu-item").length;
-	// var angle=120;
-	// var distance=90;
-	// var startingAngle=180+(-angle/2);
-	// var slice=angle/(menuItemNum-1);
-	// TweenMax.globalTimeScale(0.8);
 		}
 	}
 });
-
-// .directive('gooeyTabNav', [function() {
-//   return {
-//     restrict: 'E',
-//     replace: true,
-//     require: ['^gooeyTabs', '^gooeyTab'],
-//     template:
-//     '<a ng-class="{\'tab-item-active\': isTabActive(), \'has-badge\':badge, \'tab-hidden\':isHidden()}" ' +
-//       ' ng-disabled="disabled()" class="tab-item">' +
-//       '<span class="badge {{badgeStyle}}" ng-if="badge">{{badge}}</span>' +
-//       '<i class="icon {{getIconOn()}}" ng-if="getIconOn() && isTabActive()"></i>' +
-//       '<i class="icon {{getIconOff()}}" ng-if="getIconOff() && !isTabActive()"></i>' +
-//     '</a>',
-//     scope: {
-//       title: '@',
-//       icon: '@',
-//       iconOn: '@',
-//       iconOff: '@',
-//       badge: '=',
-//       hidden: '@',
-//       disabled: '&',
-//       badgeStyle: '@',
-//       'class': '@'
-//     },
-//     compile: function () {
-//     	console.log('compiles now')
-//     },
-//     // link: function($scope, $element, $attrs, ctrls) {
-//     // 	console.log('links now')
-//     //   var tabsCtrl = ctrls[0],
-//     //     tabCtrl = ctrls[1];
-
-//     //   //Remove title attribute so browser-tooltip does not apear
-//     //   $element[0].removeAttribute('title');
-
-//     //   $scope.selectTab = function(e) {
-//     //     e.preventDefault();
-//     //     tabsCtrl.select(tabCtrl.$scope, true);
-//     //   };
-//     //   if (!$attrs.ngClick) {
-//     //     $element.on('click', function(event) {
-//     //       $scope.$apply(function() {
-//     //         $scope.selectTab(event);
-//     //       });
-//     //     });
-//     //   }
-
-//     //   $scope.isHidden = function() {
-//     //     if ($attrs.hidden === 'true' || $attrs.hidden === true) return true;
-//     //     return false;
-//     //   };
-
-//     //   $scope.getIconOn = function() {
-//     //     return $scope.iconOn || $scope.icon;
-//     //   };
-//     //   $scope.getIconOff = function() {
-//     //     return $scope.iconOff || $scope.icon;
-//     //   };
-
-//     //   $scope.isTabActive = function() {
-//     //     return tabsCtrl.selectedTab() === tabCtrl.$scope;
-//     //   };
-//     // }
-//   };
-// }]);
