@@ -84,12 +84,12 @@ function($ionicTabsDelegate, $ionicConfig) {
     template:
     '<li ng-class="{\'tab-item-active\': isTabActive(), \'has-badge\':badge, \'tab-hidden\':isHidden()}" ' +
       ' ng-disabled="disabled()" class="menu-item">' +
-		'<button class="menu-item-button">' +
-			'<i class="icon {{getIconOn()}}" ng-if="getIconOn() && isTabActive()"></i>' +
-			'<i class="icon {{getIconOff()}}" ng-if="getIconOff() && !isTabActive()"></i>' +
-		'</button>' +
-		'<div class="menu-item-bounce"></div>' +
-	'</li>',
+  		'<button class="menu-item-button">' +
+  			'<i class="icon {{getIconOn()}}" ng-if="getIconOn() && isTabActive()"></i>' +
+  			'<i class="icon {{getIconOff()}}" ng-if="getIconOff() && !isTabActive()"></i>' +
+  		'</button>' +
+  		'<div class="menu-item-bounce"></div>' +
+  	'</li>',
     scope: {
       title: '@',
       icon: '@',
@@ -393,12 +393,16 @@ function($compile, $ionicConfig, $ionicBind, $ionicViewSwitcher) {
 				angular.forEach(menuItem, function (item, i) {
 					var angle=startingAngle+(slice*i),
 						itemIcon = angular.element(item).find('i');
-
+            
 					angular.element(item).css({
-						transform:"rotate("+(angle)+"deg)"
+						'transform':"rotate("+(angle)+"deg)",
+            '-webkit-transform':"rotate("+(angle)+"deg)",
+            '-ms-transform':"rotate("+(angle)+"deg)"
 					});
 					angular.element(item.children[0]).css({
-						transform:"rotate("+(-angle)+"deg)"
+						'transform':"rotate("+(-angle)+"deg)",
+            '-webkit-transform':"rotate("+(-angle)+"deg)",
+            '-ms-transform':"rotate("+(-angle)+"deg)"
 					});
 
 				});
