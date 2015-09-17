@@ -1,5 +1,5 @@
 # gooeyApp
-Ionic Starter App with a gooey menu
+Ionic Starter App with a gooey menu inspired by [Codrops Gooey Menu effect](http://tympanus.net/Development/CreativeGooeyEffects/menu.html) with animations inspired by [this GoneHybrid tutorial](http://gonehybrid.com/how-to-animate-your-ionic-app-with-animate-css-and-nganimate/)
 
 ## Install
 
