@@ -1,4 +1,4 @@
-angular.module('starter.directives', [])
+angular.module('gooeyApp.directives', [])
 
 .directive('gooeyTabs', [
   '$ionicTabsDelegate',

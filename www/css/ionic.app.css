@@ -7727,10 +7727,6 @@ a:hover, a:focus {
 button:focus {
   outline: none; }
 
-.dash-item.ng-enter {
-  -webkit-animation: fadeInLeft 1s;
-  animation: fadeInLeft 1s; }
-
 gooey-tabs .tab-nav.tabs {
   margin: 0 auto;
   -ms-filter: url("#goo");
