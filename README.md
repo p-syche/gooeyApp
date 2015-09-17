@@ -13,3 +13,9 @@ Option 1: in browser <br />
 Option 2: Ionic Lab <br />
 * Install Ionic Lab: http://lab.ionic.io/
 * Open gooeyApp in Ionic Lab
+
+
+## Preview
+
+You are welcome to preview this app in Ionic View ( http://view.ionic.io/ ).<br />
+**App ID: 447F4083**
