@@ -359,7 +359,7 @@ function($compile, $ionicConfig, $ionicBind, $ionicViewSwitcher) {
 				TweenMax.globalTimeScale(0.8);
 
         $ionicGesture.on('touch', function (event) {
-
+          // alert('touched the pane')
           if (isEquivalent(angular.element(event.target), buttonIcon)) {
             TweenMax.to(buttonIcon,0.1,{
                scale:0.65
